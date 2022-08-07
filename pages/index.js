@@ -1,26 +1,22 @@
+import { Fragment } from "react";
+import Head from "next/head";
+import { MongoClient } from "mongodb";
+
 import MeetupList from "../components/meetups/MeetupList";
 
-const DUMMY_MEETUPS = [
-  {
-    id: "m1",
-    title: "First Meetup",
-    image:
-      "https://upload.wikimedia.org/wikipedia/commons/d/d3/Stadtbild_M%C3%BCnchen.jpg",
-    address: "Some address 1, 12345 Some City",
-    description: "This is a first meetup",
-  },
-  {
-    id: "m2",
-    title: "Second Meetup",
-    image:
-      "https://upload.wikimedia.org/wikipedia/commons/d/d3/Stadtbild_M%C3%BCnchen.jpg",
-    address: "Some address 2, 56789 Some City Two",
-    description: "This is a second meetup",
-  },
-];
-
 function HomePage(props) {
-  return <MeetupList meetups={props.meetups} />;
+  return (
+    <Fragment>
+      <Head>
+        <title>NextJS Meetups</title>
+        <meta
+          name="description"
+          content="Browse a list of meetups using NextJS and MongoDB"
+        ></meta>
+      </Head>
+      <MeetupList meetups={props.meetups} />
+    </Fragment>
+  );
 }
 
 // Runs for every request - should just use getServerSideProps if req object is needed and/or if data changes multiple times every second
@@ -38,10 +34,26 @@ function HomePage(props) {
 // if we expect that the data changes more frequently we can add another property to the return object: revalidate: number in seconds
 // then this page won't just be generated on the build process, it will also be generated every x seconds on the server if there are requests for this page
 export async function getStaticProps() {
-  // fetch data from a db
+  // Connect to db to fetch data
+  const client = await MongoClient.connect(
+    "mongodb+srv://USER:PASSWORD@cluster0.fqnj1qe.mongodb.net/meetupsDatabase?retryWrites=true&w=majority"
+  );
+  const db = client.db();
+
+  const meetupsCollection = db.collection("meetups");
+
+  const meetups = await meetupsCollection.find().toArray();
+
+  client.close();
+
   return {
     props: {
-      meetups: DUMMY_MEETUPS,
+      meetups: meetups.map((meetup) => ({
+        title: meetup.title,
+        address: meetup.address,
+        image: meetup.image,
+        id: meetup._id.toString(),
+      })),
     },
     revalidate: 1,
   };
