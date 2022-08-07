@@ -19,3 +19,5 @@
 ```bash
   npm install
 ```
+
+- Requires MongoDB connection & credentials/network configuration
